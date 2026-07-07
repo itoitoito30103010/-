@@ -1,16 +1,27 @@
 # Rakuten Hotel Scraper
 
-Scrapes hotel name/price listings from Rakuten Travel using Playwright with
-playwright-stealth, and can fill the results into the
-`沖縄県恩納村エリア_競合料金調査_再構築フレームワーク.xlsx` competitor-rate survey
-workbook. Two scrape modes:
+Gets hotel name/room-plan/price data from Rakuten Travel and fills it into
+the `沖縄県恩納村エリア_競合料金調査_再構築フレームワーク.xlsx` competitor-rate
+survey workbook. Two ways to get the data:
 
-- **area**: a multi-hotel vacancy-search results page (default; e.g. all
-  Onna-son, Okinawa hotels on one listing page).
-- **hotel**: a single hotel's own vacancy/rate-calendar page, returning one
-  row per room plan. This is what the workbook's `05_採取手順・定義` sheet
-  asks for: one scrape per hotel per target week (W1 peak / W2 shoulder / W3
-  off), ideally sampling both a weekday and a weekend date per week.
+- **`scraper.api_cli`** (recommended if you have a Rakuten Developers app):
+  calls Rakuten's official Travel APIs (GetAreaClass / VacantHotelSearch)
+  over HTTPS with your `applicationId`/`accessKey` - structured JSON, no
+  browser, no CSS-selector guessing.
+- **`scraper.cli`** (Playwright + playwright-stealth): scrapes
+  travel.rakuten.co.jp's rendered pages directly, for when you don't have
+  API credentials. Two modes:
+  - **area**: a multi-hotel vacancy-search results page (default; e.g. all
+    Onna-son, Okinawa hotels on one listing page).
+  - **hotel**: a single hotel's own vacancy/rate-calendar page, returning one
+    row per room plan.
+
+Both paths emit the same JSON record shape (`hotel_name`/`week`/`plan_name`/
+`price`/`room_type`) that `scraper.fill_template` consumes, so the workbook
+fill step (see below) works the same regardless of which one you used. This
+is what the workbook's `05_採取手順・定義` sheet asks for either way: one
+lookup per hotel per target week (W1 peak / W2 shoulder / W3 off), sampling
+both a weekday and a weekend date per week.
 
 ## Setup
 
@@ -20,6 +31,39 @@ playwright install chromium
 ```
 
 ## Usage
+
+### Official API mode (`scraper.api_cli`)
+
+Requires a Rakuten Developers app (webservice.rakuten.co.jp) with its
+`applicationId` ("アプリID") and `accessKey` ("アクセスキー") - both are
+required together. **Never commit these values or put them in this
+repo** - set them as environment variables in your own shell:
+
+```bash
+export RAKUTEN_APPLICATION_ID="<your app id>"
+export RAKUTEN_ACCESS_KEY="<your access key>"
+export RAKUTEN_AFFILIATE_ID="<optional affiliate id>"
+```
+
+First, resolve the area codes GetAreaClass needs (drills down one level at
+a time: large → middle → small):
+
+```bash
+python -m scraper.api_cli area-codes --large "日本" --middle "沖縄" --small "恩納村"
+```
+
+Then search vacant hotels/plans for a target week and write records straight
+to a JSON file:
+
+```bash
+python -m scraper.api_cli search \
+    --middle-class-code <code from area-codes> --small-class-code <code from area-codes> \
+    --checkin 2026-08-11 --checkout 2026-08-12 --adults 2 --rooms 1 \
+    --week W1 --output results/w1.json
+```
+
+Repeat per target week (W1/W2/W3), then feed all the resulting JSON files to
+`scraper.fill_template` as usual (see below).
 
 ### Area mode (listing page)
 
@@ -100,6 +144,18 @@ automatically from its existing formulas once opened in Excel/Sheets.
 
 ## Notes
 
+- `scraper/rakuten_api.py`'s GetAreaClass endpoint/version (`20140210`) is
+  taken directly from Rakuten Developers' own API reference page.
+  VacantHotelSearch's endpoint version and `extract_hotel_plans`'s response
+  key paths are best-effort, based on Rakuten's documented response shape,
+  but are *not* independently verified against a live response (outbound
+  access to rakuten.co.jp is blocked in this sandbox) - if a real search
+  returns zero records, inspect the raw response and adjust
+  `extract_hotel_plans` accordingly.
+- Never commit `RAKUTEN_APPLICATION_ID`/`RAKUTEN_ACCESS_KEY` values, put them
+  in code, or pass them as CLI flags (they'd land in shell history) - set
+  them as environment variables only. `.env`/`.env.*` are gitignored if you
+  keep them in a local dotenv file.
 - Rakuten renders results client-side and periodically changes its CSS
   class names. `scraper/scraper.py` tries short lists of known selector
   candidates (`HOTEL_CARD_SELECTORS`/`NAME_SELECTORS`/`PRICE_SELECTORS` for

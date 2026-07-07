@@ -5,3 +5,5 @@ venv/
 *.csv
 *.json
 !package*.json
+.env
+.env.*
