@@ -17,8 +17,8 @@ import requests
 
 logger = logging.getLogger("rakuten")
 
-ENDPOINT = "https://app.rakuten.co.jp/services/api/Travel/VacantHotelSearch/20170426"
-KEYWORD_ENDPOINT = "https://app.rakuten.co.jp/services/api/Travel/KeywordHotelSearch/20170426"
+ENDPOINT = "https://openapi.rakuten.co.jp/engine/api/Travel/VacantHotelSearch/20170426"
+KEYWORD_ENDPOINT = "https://openapi.rakuten.co.jp/engine/api/Travel/KeywordHotelSearch/20170426"
 
 
 class RakutenTravelClient:
@@ -30,6 +30,7 @@ class RakutenTravelClient:
         interval_sec: float = 1.0,
         max_retries: int = 4,
         timeout: int = 20,
+        origin: str = "https://localhost",
     ):
         if not application_id:
             raise ValueError(
@@ -42,8 +43,13 @@ class RakutenTravelClient:
         self.interval_sec = interval_sec
         self.max_retries = max_retries
         self.timeout = timeout
+        self.origin = origin
         self._last_call = 0.0
         self._session = requests.Session()
+        self._session.headers.update({
+            "Origin": origin,
+            "Referer": origin.rstrip("/") + "/",
+        })
 
     # ---- 内部: レート制御付きGET -------------------------------------
     def _throttle(self) -> None:

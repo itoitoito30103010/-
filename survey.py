@@ -366,6 +366,7 @@ def main() -> None:
         access_key=cfg["credentials"]["access_key"],
         affiliate_id=cfg["credentials"]["affiliate_id"],
         interval_sec=cfg["search"]["request_interval_sec"],
+        origin=cfg["credentials"].get("origin", "https://localhost"),
     )
 
     if args.checkin:
