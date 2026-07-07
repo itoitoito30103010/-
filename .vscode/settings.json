@@ -1,0 +1,41 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.envFile": "${workspaceFolder}/.env",
+
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.extraPaths": ["${workspaceFolder}"],
+
+    "python.testing.unittestEnabled": true,
+    "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "test_*.py"],
+    "python.testing.pytestEnabled": false,
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+    "[python]": {
+        "editor.formatOnSave": false,
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/.venv": true,
+        "**/venv": true
+    },
+
+    "sqltools.connections": [
+        {
+            "name": "HCIP (local)",
+            "driver": "PostgreSQL",
+            "server": "localhost",
+            "port": 5432,
+            "database": "hcip",
+            "username": "postgres"
+        }
+    ]
+}

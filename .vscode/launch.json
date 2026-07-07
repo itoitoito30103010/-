@@ -1,0 +1,98 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "scraper.cli (area mode, default Onna-son)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scraper.cli",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--no-headless", "-v"]
+        },
+        {
+            "name": "scraper.cli (hotel mode, prompts required args)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scraper.cli",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--mode", "hotel",
+                "--hotel-name", "${input:hotelName}",
+                "--week", "${input:targetWeek}",
+                "--stay-date", "${input:stayDate}",
+                "--no-headless", "-v"
+            ]
+        },
+        {
+            "name": "scraper.api_cli area-codes",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scraper.api_cli",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "args": ["area-codes", "--large", "日本", "--middle", "沖縄", "--small", "恩納村"]
+        },
+        {
+            // Debug launches don't go through a shell, so a glob like results/*.json
+            // won't expand here - this takes exactly one JSON file. To fill from
+            // several files at once, run `python -m scraper.fill_template --data
+            // results/*.json ...` directly in the integrated terminal instead.
+            "name": "scraper.fill_template (single JSON file)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scraper.fill_template",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--xlsx", "沖縄県恩納村エリア_競合料金調査_再構築フレームワーク.xlsx",
+                "--data", "${input:resultJsonPath}",
+                "--output", "沖縄県恩納村エリア_競合料金調査_再構築フレームワーク_filled.xlsx"
+            ]
+        },
+        {
+            "name": "Run tests (unittest discover)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "unittest",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["discover", "-s", "tests", "-v"]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "hotelName",
+            "type": "promptString",
+            "description": "Hotel name (must match 02_競合セット/03_料金採取テンプレ), e.g. ハレクラニ沖縄"
+        },
+        {
+            "id": "targetWeek",
+            "type": "pickString",
+            "description": "Target week label",
+            "options": ["W1", "W2", "W3"],
+            "default": "W1"
+        },
+        {
+            "id": "stayDate",
+            "type": "promptString",
+            "description": "1-night check-in date, YYYY-MM-DD"
+        },
+        {
+            "id": "resultJsonPath",
+            "type": "promptString",
+            "description": "Path to a single result JSON file (no glob expansion in a debug launch)",
+            "default": "results/w1.json"
+        }
+    ]
+}
