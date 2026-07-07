@@ -44,16 +44,33 @@ python -m scraper.cli --no-headless -v
 ### Hotel mode (per-hotel rate calendar, for the survey workbook)
 
 Run once per hotel per target week. `--hotel-name` must match the hotel's
-name in the workbook's `02_競合セット`/`03_料金採取テンプレ` sheets so the
-fill step below can find the right row. Pass `--url` twice (weekday +
-weekend) to sample both, per the workbook's sampling rule — matching prices
-for the same room type are averaged automatically when filled.
+name in the workbook's `02_競合セット`/`03_料金採取テンプレ` sheets so both
+URL resolution and the fill step below can find the right hotel/row.
+
+**Auto-resolve the URL from the hotel's name** (recommended) by passing
+`--stay-date` instead of `--url`: the scraper looks the hotel up on Rakuten's
+keyword search, follows its result card to the hotel's own page, extracts
+its Rakuten hotel number, and builds one vacancy-page URL per `--stay-date`.
+Pass `--stay-date` twice (a weekday + a weekend date) to sample both per the
+workbook's sampling rule — matching prices for the same room type are
+averaged automatically when filled.
 
 ```bash
 python -m scraper.cli --mode hotel \
     --hotel-name "ハレクラニ沖縄" --week W1 \
-    --url "https://travel.rakuten.co.jp/HOTEL/<hotel_no>/yoyaku.html?f_stay_year=2026&f_stay_month=8&f_stay_day=11&f_nights=1&f_stay_adult_n=2&f_room_num=1" \
-    --url "https://travel.rakuten.co.jp/HOTEL/<hotel_no>/yoyaku.html?f_stay_year=2026&f_stay_month=8&f_stay_day=15&f_nights=1&f_stay_adult_n=2&f_room_num=1" \
+    --stay-date 2026-08-11 --stay-date 2026-08-15 \
+    --output results/harekurani_w1.json
+```
+
+Or pass the hotel's vacancy-page URL(s) directly with `--url` to skip
+auto-resolution entirely (e.g. if keyword search picks the wrong hotel, or
+you already have the URL):
+
+```bash
+python -m scraper.cli --mode hotel \
+    --hotel-name "ハレクラニ沖縄" --week W1 \
+    --url "https://travel.rakuten.co.jp/HOTEL/<hotel_no>/yoyaku.html?f_stay_adult_n=2&f_room_num=1&f_check_in=2026-08-11&f_check_out=2026-08-12" \
+    --url "https://travel.rakuten.co.jp/HOTEL/<hotel_no>/yoyaku.html?f_stay_adult_n=2&f_room_num=1&f_check_in=2026-08-15&f_check_out=2026-08-16" \
     --output results/harekurani_w1.json
 ```
 
@@ -87,8 +104,11 @@ automatically from its existing formulas once opened in Excel/Sheets.
   class names. `scraper/scraper.py` tries short lists of known selector
   candidates (`HOTEL_CARD_SELECTORS`/`NAME_SELECTORS`/`PRICE_SELECTORS` for
   area mode, `PLAN_CARD_SELECTORS`/`PLAN_NAME_SELECTORS`/`PLAN_PRICE_SELECTORS`
-  for hotel mode); if a run returns zero results, inspect the live page and
-  add the current class names to those lists.
+  for hotel mode, `HOTEL_LINK_SELECTORS` for name-based URL resolution); if a
+  run returns zero results, inspect the live page and add the current class
+  names to those lists. `build_keyword_search_url`'s `/dsearch/` endpoint and
+  param names are likewise a best-effort guess, unverified against a live
+  page — check it resolves to the expected hotel before relying on it.
 - Be a good citizen: keep request volume low, respect Rakuten's Terms of
   Service and `robots.txt`, and don't hammer the site with concurrent
   requests.

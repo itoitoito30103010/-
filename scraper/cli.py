@@ -9,7 +9,14 @@ import json
 import logging
 import sys
 
-from .scraper import HotelResult, PlanResult, build_search_url, scrape, scrape_hotels
+from .scraper import (
+    HotelResult,
+    PlanResult,
+    build_search_url,
+    resolve_and_build_hotel_urls,
+    scrape,
+    scrape_hotels,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -24,7 +31,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "(one CLI run per hotel per target week, per the 03/05 survey sheets)."
         ),
     )
-    parser.add_argument("--url", action="append", dest="urls", help="Full page URL to scrape (repeatable). In area mode, overrides --pref/--area. In hotel mode, this is the hotel's own vacancy page (pass twice for a weekday+weekend sample of the same week).")
+    parser.add_argument("--url", action="append", dest="urls", help="Full page URL to scrape (repeatable). In area mode, overrides --pref/--area. In hotel mode, this is the hotel's own vacancy page, overriding auto-resolution via --hotel-name/--stay-date (pass twice for a weekday+weekend sample of the same week).")
+    parser.add_argument("--stay-date", action="append", dest="stay_dates", help="1-night check-in date, YYYY-MM-DD (hotel mode, repeatable: pass a weekday and a weekend date for the same target week). Used with --hotel-name to auto-resolve the hotel's vacancy-page URL(s) when --url is not given.")
     parser.add_argument("--pref", default="okinawa", help="Rakuten prefecture path segment (default: okinawa)")
     parser.add_argument("--area", default="onnason", help="Rakuten area path segment (default: onnason)")
     parser.add_argument("--adults", type=int, default=2, help="Number of adults per room (default: 2)")
@@ -43,12 +51,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
 
     if args.mode == "hotel":
-        if not args.urls:
-            parser.error("--mode hotel requires at least one --url (the hotel's own vacancy page)")
         if not args.hotel_name:
             parser.error("--mode hotel requires --hotel-name")
         if not args.week:
             parser.error("--mode hotel requires --week")
+        if not args.urls and not args.stay_dates:
+            parser.error("--mode hotel requires either --url (the hotel's own vacancy page) or --stay-date (to auto-resolve it)")
 
     return args
 
@@ -95,9 +103,27 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.mode == "hotel":
+        if args.urls:
+            hotel_urls = args.urls
+        else:
+            hotel_urls = asyncio.run(
+                resolve_and_build_hotel_urls(
+                    args.hotel_name,
+                    args.stay_dates,
+                    args.adults,
+                    args.rooms,
+                    pref=args.pref,
+                    area=args.area,
+                    headless=args.headless,
+                    min_delay=args.min_delay,
+                    max_delay=args.max_delay,
+                )
+            )
+            logging.getLogger(__name__).info("Resolved %d vacancy-page URL(s) for %s", len(hotel_urls), args.hotel_name)
+
         plan_results = asyncio.run(
             scrape_hotels(
-                args.urls,
+                hotel_urls,
                 hotel_name=args.hotel_name,
                 week=args.week,
                 headless=args.headless,

@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 import openpyxl
 
+from .matching import normalize_name
 from .roomtype import classify_room_type
 
 SHEET_NAME = "03_料金採取テンプレ"
@@ -47,10 +48,6 @@ class FillWarning:
     reason: str
 
 
-def _normalize(name: str) -> str:
-    return re.sub(r"\s+", "", name or "").lower()
-
-
 def _parse_price(price) -> float | None:
     if isinstance(price, (int, float)):
         return float(price)
@@ -61,16 +58,16 @@ def _parse_price(price) -> float | None:
 
 
 def find_hotel_row(ws, hotel_name: str) -> int | None:
-    target = _normalize(hotel_name)
+    target = normalize_name(hotel_name)
     if not target:
         return None
     for row in range(FIRST_HOTEL_ROW, LAST_HOTEL_ROW + 1):
         cell_name = ws.cell(row=row, column=HOTEL_NAME_COL).value
-        if cell_name and _normalize(cell_name) == target:
+        if cell_name and normalize_name(cell_name) == target:
             return row
     for row in range(FIRST_HOTEL_ROW, LAST_HOTEL_ROW + 1):
         cell_name = ws.cell(row=row, column=HOTEL_NAME_COL).value
-        if cell_name and (target in _normalize(cell_name) or _normalize(cell_name) in target):
+        if cell_name and (target in normalize_name(cell_name) or normalize_name(cell_name) in target):
             return row
     return None
 
