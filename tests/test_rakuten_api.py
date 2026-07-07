@@ -55,13 +55,6 @@ class CallUrlBuildingTest(unittest.TestCase):
         self.assertEqual(qs["format"], ["json"])
         self.assertEqual(qs["formatVersion"], ["2"])
 
-    def test_get_area_class_with_codes_passes_them_through(self):
-        with mock.patch("urllib.request.urlopen", return_value=self._mock_response({"middleClasses": []})) as urlopen:
-            get_area_class(large_class="japan", middle_class="okinawa")
-        qs = parse_qs(urlparse(urlopen.call_args[0][0]).query)
-        self.assertEqual(qs["largeClassCode"], ["japan"])
-        self.assertEqual(qs["middleClassCode"], ["okinawa"])
-
     def test_vacant_hotel_search_query_params(self):
         with mock.patch("urllib.request.urlopen", return_value=self._mock_response({"hotels": []})) as urlopen:
             vacant_hotel_search(middle_class_code="mc", small_class_code="sc", checkin="2026-08-11", checkout="2026-08-12", adults=2, rooms=1)
@@ -77,30 +70,87 @@ class CallUrlBuildingTest(unittest.TestCase):
 
 
 class FindAreaCodesTest(unittest.TestCase):
-    def test_drills_down_through_three_levels(self):
-        large_resp = {"largeClasses": [{"largeClassCode": "japan", "largeClassName": "日本"}]}
-        middle_resp = {"middleClasses": [{"middleClassCode": "okinawa", "middleClassName": "沖縄"}]}
-        small_resp = {"smallClasses": [{"smallClassCode": "onnason", "smallClassName": "恩納村"}]}
+    """GetAreaClass takes no area-code input filters (confirmed from Rakuten's
+    own docs) - it returns the whole tree in one call, which find_area_codes
+    walks locally. Test both plausible nesting shapes the tree's entries
+    might use (flat dicts vs. lists of single-key dicts to merge)."""
 
-        with mock.patch.object(rakuten_api, "get_area_class", side_effect=[large_resp, middle_resp, small_resp]) as m:
+    def _flat_tree(self):
+        return {
+            "largeClasses": [
+                {
+                    "largeClassCode": "japan",
+                    "largeClassName": "日本",
+                    "middleClasses": [
+                        {
+                            "middleClassCode": "okinawa",
+                            "middleClassName": "沖縄",
+                            "smallClasses": [
+                                {"smallClassCode": "onnason", "smallClassName": "恩納村"},
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+
+    def _wrapped_tree(self):
+        return {
+            "largeClasses": [
+                {
+                    "largeClass": [
+                        {"largeClassCode": "japan", "largeClassName": "日本"},
+                        {
+                            "middleClasses": [
+                                {
+                                    "middleClass": [
+                                        {"middleClassCode": "okinawa", "middleClassName": "沖縄"},
+                                        {
+                                            "smallClasses": [
+                                                {
+                                                    "smallClass": {
+                                                        "smallClassCode": "onnason",
+                                                        "smallClassName": "恩納村",
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                    ]
+                                }
+                            ]
+                        },
+                    ]
+                }
+            ]
+        }
+
+    def test_resolves_three_levels_from_flat_tree(self):
+        with mock.patch.object(rakuten_api, "get_area_class", return_value=self._flat_tree()) as m:
             result = find_area_codes("日本", "沖縄", "恩納村")
-
         self.assertEqual(result["largeClassCode"], "japan")
         self.assertEqual(result["middleClassCode"], "okinawa")
         self.assertEqual(result["smallClassCode"], "onnason")
-        self.assertEqual(m.call_count, 3)
-        m.assert_any_call(large_class="japan")
-        m.assert_any_call(large_class="japan", middle_class="okinawa")
+        m.assert_called_once_with()
+
+    def test_resolves_three_levels_from_wrapped_tree(self):
+        with mock.patch.object(rakuten_api, "get_area_class", return_value=self._wrapped_tree()):
+            result = find_area_codes("日本", "沖縄", "恩納村")
+        self.assertEqual(result["largeClassCode"], "japan")
+        self.assertEqual(result["middleClassCode"], "okinawa")
+        self.assertEqual(result["smallClassCode"], "onnason")
+
+    def test_large_only_lookup(self):
+        with mock.patch.object(rakuten_api, "get_area_class", return_value=self._flat_tree()):
+            result = find_area_codes("日本")
+        self.assertEqual(result, {"largeClassCode": "japan", "largeClassName": "日本"})
 
     def test_stops_early_when_large_class_not_found(self):
-        with mock.patch.object(rakuten_api, "get_area_class", return_value={"largeClasses": []}) as m:
+        with mock.patch.object(rakuten_api, "get_area_class", return_value={"largeClasses": []}):
             result = find_area_codes("存在しない", "沖縄")
         self.assertIsNone(result)
-        m.assert_called_once()
 
     def test_returns_partial_result_when_middle_not_found(self):
-        large_resp = {"largeClasses": [{"largeClassCode": "japan", "largeClassName": "日本"}]}
-        with mock.patch.object(rakuten_api, "get_area_class", side_effect=[large_resp, {"middleClasses": []}]):
+        with mock.patch.object(rakuten_api, "get_area_class", return_value=self._flat_tree()):
             result = find_area_codes("日本", "存在しない県")
         self.assertEqual(result, {"largeClassCode": "japan", "largeClassName": "日本"})
 

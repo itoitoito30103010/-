@@ -12,14 +12,24 @@ Never hardcode these values in source, and never pass them as CLI arguments
 (they'd end up in shell history / process listings) - set them as
 environment variables instead.
 
-The endpoint base and GetAreaClass's version (20140210) are taken directly
-from Rakuten Developers' own API reference page. VacantHotelSearch's
-endpoint version below is *not* independently verified from this sandbox
-(outbound access to rakuten.co.jp is blocked here) - confirm the current
-version on https://webservice.rakuten.co.jp/ before relying on it, and the
-same goes for `extract_hotel_plans`'s response key paths: they follow
-Rakuten's documented response shape, but adjust them if a real response
-doesn't match.
+The endpoint base, GetAreaClass's version (20140210), and its documented
+*input* parameters (application ID/access key/affiliate ID/format/
+formatVersion/elements/callback - no area-code filters) are taken directly
+from Rakuten Developers' own API reference page: GetAreaClass takes no
+area-code arguments and returns the full large/middle/small/detailClasses
+tree in a single response; `find_area_codes` walks that tree by name rather
+than drilling down with repeated filtered calls.
+
+VacantHotelSearch's endpoint version, and the exact nesting of
+`get_area_class`'s and `extract_hotel_plans`'s *response* shapes, are *not*
+independently verified from this sandbox (outbound access to rakuten.co.jp
+is blocked here) - confirm the current version on
+https://webservice.rakuten.co.jp/ and check a real response before relying
+on them. `_flatten_entry`/`extract_hotel_plans` are written to tolerate a
+couple of plausible nesting shapes (Rakuten's family of Travel APIs
+sometimes represents a node as a flat dict, sometimes as a list of
+single-key dicts to merge), but adjust them if a live response doesn't
+match either.
 """
 
 from __future__ import annotations
@@ -82,72 +92,77 @@ def _call(endpoint: str, version: str, params: dict) -> dict:
     return json.loads(body)
 
 
-def get_area_class(
-    large_class: str | None = None,
-    middle_class: str | None = None,
-    small_class: str | None = None,
-) -> dict:
-    """Call GetAreaClass, drilling down a level at a time.
+def get_area_class() -> dict:
+    """Call GetAreaClass and return the full area-code hierarchy.
 
-    Per Rakuten's docs: omit all filters to get `largeClasses`; pass a
-    resolved `large_class` code to get its `middleClasses`; pass both to get
-    `smallClasses`; pass all three to get `detailClasses`.
+    Per Rakuten's documented input parameters, this endpoint takes no
+    area-code filters - it returns the entire largeClasses/middleClasses/
+    smallClasses/detailClasses tree in one response. `find_area_codes` walks
+    that tree by display name to resolve the codes you need.
     """
-    params = {}
-    if large_class:
-        params["largeClassCode"] = large_class
-    if middle_class:
-        params["middleClassCode"] = middle_class
-    if small_class:
-        params["smallClassCode"] = small_class
-    return _call("GetAreaClass", GET_AREA_CLASS_VERSION, params)
+    return _call("GetAreaClass", GET_AREA_CLASS_VERSION, {})
 
 
-def _find_class(classes: list[dict], key: str, name: str) -> dict | None:
-    for entry in classes:
-        node = entry.get(key, entry)  # tolerate both {"largeClass": {...}} and flat shapes
-        if node.get(f"{key}Name") == name:
-            return node
-    return None
+_LEVELS = ("large", "middle", "small", "detail")
+
+
+def _flatten_entry(entry, level: str) -> dict:
+    """Normalize one `{level}Classes` list entry to a flat dict exposing at
+    least `{level}ClassCode`/`{level}ClassName` (and, if present, the next
+    level's `{nextLevel}Classes` list to descend into).
+
+    Tolerates a `{"largeClass": ...}`-wrapped shape and a flat shape, and -
+    since this API family sometimes represents a node as a list of
+    single-key dicts to merge (see module docstring) - flattens that too.
+    """
+    if isinstance(entry, dict) and f"{level}Class" in entry:
+        entry = entry[f"{level}Class"]
+    if isinstance(entry, list):
+        merged: dict = {}
+        for part in entry:
+            if isinstance(part, dict):
+                merged.update(part)
+        return merged
+    return entry if isinstance(entry, dict) else {}
 
 
 def find_area_codes(
-    large_class_name: str, middle_class_name: str, small_class_name: str | None = None
+    large_class_name: str,
+    middle_class_name: str | None = None,
+    small_class_name: str | None = None,
+    detail_class_name: str | None = None,
 ) -> dict | None:
     """Look up area codes by their Japanese display names (e.g.
-    large="日本", middle="沖縄", small="恩納村"), drilling down through
-    GetAreaClass one level at a time.
+    large="日本", middle="沖縄", small="恩納村") in a single GetAreaClass
+    response's nested tree.
 
-    Returns a dict with whichever of large/middle/small class codes+names
-    were resolved (fewer keys if a deeper name wasn't found), or None if
-    even the large-class name didn't match anything.
+    Returns a dict with whichever of large/middle/small/detail class
+    codes+names were resolved along the requested chain (fewer keys if a
+    deeper name wasn't given or wasn't found), or None if even the
+    large-class name didn't match anything.
     """
-    large = get_area_class()
-    large_match = _find_class(large.get("largeClasses", []), "largeClass", large_class_name)
-    if not large_match:
-        logger.warning("No largeClass matched %r", large_class_name)
-        return None
-    result = {"largeClassCode": large_match["largeClassCode"], "largeClassName": large_match.get("largeClassName")}
+    names = (large_class_name, middle_class_name, small_class_name, detail_class_name)
+    container = get_area_class()
+    result: dict = {}
 
-    middle = get_area_class(large_class=large_match["largeClassCode"])
-    middle_match = _find_class(middle.get("middleClasses", []), "middleClass", middle_class_name)
-    if not middle_match:
-        logger.warning("No middleClass matched %r under %r", middle_class_name, large_class_name)
-        return result
-    result["middleClassCode"] = middle_match["middleClassCode"]
-    result["middleClassName"] = middle_match.get("middleClassName")
+    for level, name in zip(_LEVELS, names):
+        if name is None:
+            break
+        entries = container.get(f"{level}Classes", [])
+        match = None
+        for raw_entry in entries:
+            flat = _flatten_entry(raw_entry, level)
+            if flat.get(f"{level}ClassName") == name:
+                match = flat
+                break
+        if not match:
+            logger.warning("No %sClass matched %r", level, name)
+            break
+        result[f"{level}ClassCode"] = match.get(f"{level}ClassCode")
+        result[f"{level}ClassName"] = match.get(f"{level}ClassName")
+        container = match
 
-    if not small_class_name:
-        return result
-
-    small = get_area_class(large_class=large_match["largeClassCode"], middle_class=middle_match["middleClassCode"])
-    small_match = _find_class(small.get("smallClasses", []), "smallClass", small_class_name)
-    if not small_match:
-        logger.warning("No smallClass matched %r under %r/%r", small_class_name, large_class_name, middle_class_name)
-        return result
-    result["smallClassCode"] = small_match["smallClassCode"]
-    result["smallClassName"] = small_match.get("smallClassName")
-    return result
+    return result or None
 
 
 def vacant_hotel_search(

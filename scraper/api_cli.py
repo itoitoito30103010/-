@@ -19,10 +19,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    area = sub.add_parser("area-codes", help="Look up middle/small area codes by name via GetAreaClass.")
+    area = sub.add_parser("area-codes", help="Look up area codes by name via GetAreaClass (one call, walked locally).")
     area.add_argument("--large", required=True, help="Large-class display name, e.g. '日本'")
-    area.add_argument("--middle", required=True, help="Middle-class display name, e.g. '沖縄'")
-    area.add_argument("--small", help="Small-class display name, e.g. '恩納村'")
+    area.add_argument("--middle", help="Middle-class display name, e.g. '沖縄'")
+    area.add_argument("--small", help="Small-class display name, e.g. '恩納村' (requires --middle)")
+    area.add_argument("--detail", help="Detail-class display name (requires --small)")
 
     search = sub.add_parser(
         "search",
@@ -50,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "area-codes":
-            result = find_area_codes(args.large, args.middle, args.small)
+            result = find_area_codes(args.large, args.middle, args.small, args.detail)
             if not result:
                 print("No match found.", file=sys.stderr)
                 return 1

@@ -45,8 +45,9 @@ export RAKUTEN_ACCESS_KEY="<your access key>"
 export RAKUTEN_AFFILIATE_ID="<optional affiliate id>"
 ```
 
-First, resolve the area codes GetAreaClass needs (drills down one level at
-a time: large → middle → small):
+First, resolve the area codes VacantHotelSearch needs. GetAreaClass takes no
+area-code filters itself - one call returns the entire large/middle/small/
+detailClasses tree, which `area-codes` walks locally by display name:
 
 ```bash
 python -m scraper.api_cli area-codes --large "日本" --middle "沖縄" --small "恩納村"
