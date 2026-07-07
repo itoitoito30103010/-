@@ -1,0 +1,80 @@
+{
+  "pagingInfo": {"recordCount": 12, "pageCount": 1, "page": 1, "first": 1, "last": 12},
+  "hotels": [
+    {"hotel": [
+      {"hotelBasicInfo": {"hotelNo": 168353, "hotelName": "ハレクラニ沖縄"}},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "スタンダード ガーデンビュー", "planName": "【素泊まり】シンプルステイ", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 62000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "デラックス オーシャンビュー", "planName": "【素泊まり】オーシャンステイ", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 88000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "クラブ オーシャンフロント スイート", "planName": "【朝食付】クラブラウンジ利用可", "withBreakfastFlag": 1, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 155000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "デラックス オーシャンビュー", "planName": "【素泊まり・返金不可】早割セール", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 71000, "chargeFlag": 1}}
+      ]}
+    ]},
+
+    {"hotel": [
+      {"hotelBasicInfo": {"hotelNo": 132009, "hotelName": "ルネッサンス リゾート オキナワ"}},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "スタンダードルーム", "planName": "【素泊まり】ベーシックプラン", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 41000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "オーシャンウイング オーシャンビュー", "planName": "【朝食付】海側確約", "withBreakfastFlag": 1, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 58000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "クラブサビー エグゼクティブ", "planName": "【朝食付】ラウンジアクセス", "withBreakfastFlag": 1, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 92000, "chargeFlag": 1}}
+      ]}
+    ]},
+
+    {"hotel": [
+      {"hotelBasicInfo": {"hotelNo": 140374, "hotelName": "シェラトン沖縄サンマリーナリゾート"}},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "スタンダード", "planName": "【素泊まり】スタンダードステイ", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 37000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "デラックス オーシャンフロント", "planName": "【素泊まり】オーシャンフロント確約", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 49000, "chargeFlag": 1}}
+      ]}
+    ]},
+
+    {"hotel": [
+      {"hotelBasicInfo": {"hotelNo": 128470, "hotelName": "ANAインターコンチネンタル万座ビーチリゾート"}},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "スーペリア", "planName": "【素泊まり】スタンダードステイ", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 44000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "デラックス オーシャンビュー", "planName": "【素泊まり】海側確約", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 61000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "クラブインターコンチネンタル プレミアム", "planName": "【朝食付】クラブラウンジ利用可", "withBreakfastFlag": 1, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 118000, "chargeFlag": 1}}
+      ]}
+    ]},
+
+    {"hotel": [
+      {"hotelBasicInfo": {"hotelNo": 141234, "hotelName": "カフーリゾート フチャク コンド・ホテル"}},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "ホテル棟 スタンダード", "planName": "【素泊まり】ベーシック", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 33000, "chargeFlag": 1}}
+      ]},
+      {"roomInfo": [
+        {"roomBasicInfo": {"roomName": "コンドミニアム 1BR キッチン付", "planName": "【素泊まり】暮らすように滞在", "withBreakfastFlag": 0, "withDinnerFlag": 0, "reserveUrl": ""}},
+        {"dailyCharge": {"stayDate": "2026-08-07", "total": 46000, "chargeFlag": 1}}
+      ]}
+    ]}
+  ]
+}
