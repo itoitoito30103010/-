@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Install dependencies",
+            "type": "shell",
+            "command": "pip install -r requirements.txt && playwright install chromium",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run tests",
+            "type": "shell",
+            "command": "python -m unittest discover -s tests -v",
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "scraper.cli --help",
+            "type": "shell",
+            "command": "python -m scraper.cli --help",
+            "problemMatcher": []
+        },
+        {
+            "label": "scraper.api_cli --help",
+            "type": "shell",
+            "command": "python -m scraper.api_cli --help",
+            "problemMatcher": []
+        },
+        {
+            "label": "Apply sql/001_init_schema.sql (local Postgres)",
+            "type": "shell",
+            "command": "psql -h localhost -U postgres -d hcip -f sql/001_init_schema.sql",
+            "problemMatcher": []
+        }
+    ]
+}
